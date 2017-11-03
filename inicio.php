@@ -224,6 +224,7 @@
         $("#contato-numero").val("");
         $("#contato-email").val("");
         $("#contato-data_nascimento").val("");
+        $("#contato-grupos").html('');
         $('#m_contato').modal('show');
     });
 
@@ -266,7 +267,24 @@
                 $("#contato-numero").val(data.telefone);
                 $("#contato-email").val(data.email);
                 $("#contato-data_nascimento").val(data.data_nascimento);
-                $('#m_contato').modal('show');
+                /////Carrega os grupos associados com o contato
+                $.ajax({
+                    url: urlApi+'/grupo-contato/'+id,
+                    type: 'get',
+                    dataType: 'json',
+                    data:{'access_token': $.cookie('token')},
+                    success: function (json) {
+                        var data = json.data;
+                        $("#contato-grupos").html('');
+                        for(var i=0; i<data.length;i++){
+                            console.log(data);
+                            $("#contato-grupos").append('<option selected value="'+data[i].id+'">'+data[i].nome+'</option>');
+                        }
+                        $('#m_contato').modal('show');
+                    }
+                });
+
+
             }
         });
 
@@ -282,7 +300,9 @@
         obj.telefone         = $("#contato-numero").val();
         obj.email            = $("#contato-email").val();
         obj.data_nascimento  = $("#contato-data_nascimento").val();
+        obj.grupos           = $("#contato-grupos").val();
         var urlContato       = urlApi+'/contato';
+        var urlGrupo         = urlApi+'/associa-varios-grupo-contato';
         var headers          = {};
 
         if(obj.id){
@@ -295,11 +315,52 @@
             data: obj,
             dataType: 'json',
             success: function (json) {
-                tableContato.draw();
-                $('#m_contato').modal('hide');
+                ////Salva os grupos
+                $.ajax({
+                    url: urlGrupo+'/'+json.data.id,
+                    type: "POST",
+                    data: obj,
+                    dataType: 'json',
+                    success: function (json) {
+                        tableContato.draw();
+                        ////Salva os grupos
+                        $('#m_contato').modal('hide');
+                    }
+                });
+
+
             }
         });
     });
+    $('#contato-grupos').select2({
+        placeholder: 'Selecione',
+        //minimumInputLength: 3,
+        ajax: {
+            url: urlApi+'/grupo',
+            dataType: 'json',
+            data: function (term) {
+                console.log(term.term);
+                return {
+                    nome: term.term,
+                    access_token : $.cookie('token')
+                };
+            },
+            delay: 250,
+            processResults: function (result) {
+                console.log(result);
+                var newData = [];
+                var data    = result.data;
+                for(var i=0; i<data.length;i++){
+                    newData.push({id:data[i].id, text:data[i].nome})
+                }
+
+                return {
+                    results: newData
+                };
+            },
+        }
+    });
+
 
 
     $("#mensagem-add").click(function(){

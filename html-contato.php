@@ -66,6 +66,13 @@
                                             </label>
                                             <input type="email" class="col-2 col-form-label" id="contato-data_nascimento">
                                         </div>
+                                        <div  class="form-group m-form__group row">
+                                            <label for="contato-grupos" class="col-2 col-form-label">
+                                                Grupos:
+                                            </label>
+                                            <select class="col-10 col-form-label"  multiple id="contato-grupos" style="width: 400px">
+                                            </select>
+                                        </div>
                                     </form>
                                 </div>
                                 <div class="modal-footer">
