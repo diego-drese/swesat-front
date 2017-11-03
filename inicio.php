@@ -23,6 +23,7 @@
     <!--begin::Base Styles -->
     <link href="assets/css/bundle.css" rel="stylesheet" type="text/css" />
     <link href="assets/css/style.bundle.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="https://www.amcharts.com/lib/3/plugins/export/export.css" type="text/css" meDia="all" />
     <!--end::Base Styles -->
 
     <link rel="shortcut icon" href="assets/img/favicon.ico" />
@@ -118,15 +119,15 @@
 													<i class="la la-gear"></i>
 												</span>
                                         <h3 class="m-portlet__head-text">
-                                            Dasboard
+                                            Ultimos Agendamentos
                                         </h3>
                                     </div>
                                 </div>
                             </div>
                             <div class="m-portlet__body">
                                 <!--begin::Section-->
-                                <div class="m-section">
-
+                                <div class="m-section" style="height: 400px">
+                                    <div id="chartdiv" style=" width: 100%;  height: 400px;"></div>
                                 </div>
                             </div>
                         </div>
@@ -135,6 +136,7 @@
                 </div>
             </div>
 
+            <?php include_once ('html-agendamento.php');?>
             <?php include_once ('html-contato.php');?>
             <?php include_once ('html-mensagem.php');?>
             <?php include_once ('html-grupo.php');?>
@@ -172,9 +174,16 @@
 <script src="assets/js/scripts.bundle.js" type="text/javascript"></script>
 <script src="assets/js/jquery.cookie.js" type="text/javascript"></script>
 <script src="//cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js" type="text/javascript"></script>
+<!-- Resources -->
+<script src="https://www.amcharts.com/lib/3/amcharts.js"></script>
+<script src="https://www.amcharts.com/lib/3/serial.js"></script>
+<script src="https://www.amcharts.com/lib/3/plugins/export/export.min.js"></script>
+<script src="https://www.amcharts.com/lib/3/themes/light.js"></script>
+
+
 <!--end::Base Scripts -->
 <script type="text/javascript">
-    setTimeout(function(){
+    setInterval(function(){
         if(!$.cookie('token')){
             console.log("Cookie expirado");
             window.location.href= "/";
@@ -495,6 +504,293 @@
         });
     });
 
+    $("#agendamento-add").click(function(){
+        $("#agendamento-id-id").val("");
+        $("#agendamento-data_disparo").val("");
+        $("#agendamento-data_fim").val("");
+        $("#agendamento-tipo").val("UNICO");
+        $("#agendamento-grupo_id").html('');
+        $("#agendamento-contato_id").html('');
+        $("#agendamento-mensagem_id").html('');
+        $("#agendamento-obs").val("");
+        $('#m_agendamento').modal('show');
+    });
+
+    var tableAgendamento =  $('#table-agendamento').DataTable({
+        "ajax": urlApi+"/agendamento?access_token="+$.cookie('token'),
+        "serverSide": true,
+        "language": language,
+        "columns": [
+            { "data": "id" },
+            { "data": "data_disparo" },
+            { "data": "data_fim" },
+            { "data": "tipo" },
+            { "data": "contato_nome", "render": function ( data, type, row ) {
+                    if(row['tipo']=="UNICO"){
+                        return '<td>'+data+'</td>';
+                    }else{
+                        return '<td></td>';
+                    }
+                }
+            },
+
+            { "data": "grupo_nome", "render": function ( data, type, row ) {
+                    if(row['tipo']=="GRUPO"){
+                        return '<td>'+data+'</td>';
+                    }else{
+                        return '<td></td>';
+                    }
+                }
+            },
+            { "data": "total_agendamento" },
+            { "data": "total_disparo" },
+            { "data": "status_disparo" },
+            { "data": "obs" },
+            { "data": "id", "render": function ( data, type, row ) {
+                    if(row['status_disparo']=="AGUARDANDO"){
+                        return '<td><a class="edit" href="javascript:" onclick="agendamentoEdit(' + row.id + ')"> Edit </a></td>';
+                    }else{
+                        return '<td></td>';
+                    }
+                }
+            },
+        ],
+        "preDrawCallback": function () {
+            $('.dataTables_length').css('float', 'left');
+            $('.dataTables_filter').css('float', 'right');
+        },
+    });
+    var agendamentoEdit = function(id){
+        $.ajax({
+            url: urlApi+'/agendamento/'+id,
+            type: 'get',
+            dataType: 'json',
+            data:{'access_token': $.cookie('token')},
+            success: function (json) {
+                var data = json.data;
+                $("#agendamento-id").val(id);
+
+                $("#agendamento-data_disparo").val(data.data_disparo);
+                $("#agendamento-data_fim").val(data.data_fim);
+                $("#agendamento-tipo").val(data.tipo);
+                if(data.grupo_id){
+                    $("#agendamento-grupo_id").html('<option value="'+data.grupo_id+'">'+data.grupo_nome+'</option>');
+                }
+                if(data.contato_id){
+                    $("#agendamento-contato_id").html('<option value="'+data.contato_id+'">'+data.contato_nome+'</option>');
+                }
+
+                $("#agendamento-mensagem_id").html('<option value="'+data.mensagem_id+'">'+data.mensagem_nome+'</option>');
+                $("#agendamento-obs").val(data.obs);
+                $('#m_agendamento').modal('show');
+            }
+        });
+
+    };
+    $("#save-agendamento").click(function(){
+        var obj             = {};
+        obj.access_token    = $.cookie('token');
+        obj.id              = $("#agendamento-id").val();
+        obj.data_disparo    = $("#agendamento-data_disparo").val();
+        obj.data_fim        = $("#agendamento-data_fim").val();
+        obj.tipo            = $("#agendamento-tipo").val();
+        obj.mensagem_id     = $("#agendamento-mensagem_id").val();
+        obj.grupo_id        = $("#agendamento-grupo_id").val();
+        obj.contato_id      = $("#agendamento-contato_id").val();
+        obj.obs             = $("#agendamento-obs").val();
+        var urlAgendamento     = urlApi+'/agendamento';
+
+        if(obj.id){
+            urlAgendamento   = urlApi+'/agendamento/'+obj.id;
+        }
+
+        $.ajax({
+            url: urlAgendamento,
+            type: "POST",
+            data: obj,
+            dataType: 'json',
+            success: function (json) {
+                tableAgendamento.draw();
+                $('#m_agendamento').modal('hide');
+            }
+        });
+    });
+    $("#agendamento-tipo").change(function(){
+        if(this.value=="UNICO"){
+            $("#select-contato").show();
+            $("#select-grupo").hide();
+        }else{
+            $("#select-contato").hide()
+            $("#select-grupo").show()
+        }
+    });
+    $("#agendamento-tipo").trigger('change');
+
+    $('#agendamento-contato_id').select2({
+        placeholder: 'Selecione',
+        //minimumInputLength: 3,
+        ajax: {
+            url: urlApi+'/contato',
+            dataType: 'json',
+            data: function (term) {
+                console.log(term.term);
+                return {
+                    nome: term.term,
+                    access_token : $.cookie('token')
+                };
+            },
+            delay: 250,
+            processResults: function (result) {
+                console.log(result);
+                var newData = [];
+                var data    = result.data;
+                for(var i=0; i<data.length;i++){
+                    newData.push({id:data[i].id, text:data[i].nome})
+                }
+
+                return {
+                    results: newData
+                };
+            },
+        }
+    });
+
+    $('#agendamento-grupo_id').select2({
+        placeholder: 'Selecione',
+        //minimumInputLength: 3,
+        ajax: {
+            url: urlApi+'/grupo',
+            dataType: 'json',
+            data: function (term) {
+                console.log(term.term);
+                return {
+                    nome: term.term,
+                    access_token : $.cookie('token')
+                };
+            },
+            delay: 250,
+            processResults: function (result) {
+                console.log(result);
+                var newData = [];
+                var data    = result.data;
+                for(var i=0; i<data.length;i++){
+                    newData.push({id:data[i].id, text:data[i].nome})
+                }
+
+                return {
+                    results: newData
+                };
+            },
+        }
+    });
+    $('#agendamento-mensagem_id').select2({
+        placeholder: 'Selecione',
+        //minimumInputLength: 2,
+        ajax: {
+            url: urlApi+'/mensagem',
+            dataType: 'json',
+            data: function (term) {
+                console.log(term.term);
+                return {
+                    nome: term.term,
+                    access_token : $.cookie('token')
+                };
+            },
+            delay: 250,
+            processResults: function (result) {
+                console.log(result);
+                var newData = [];
+                var data    = result.data;
+                for(var i=0; i<data.length;i++){
+                    newData.push({id:data[i].id, text:data[i].nome})
+                }
+                return {
+                    results: newData
+                };
+            },
+        }
+    });
+
+    $('#agendamento-data_disparo').datetimepicker({
+        todayHighlight: true,
+        autoclose: true,
+        format: 'yyyy-mm-dd hh:ii'
+    });
+
+    $('#agendamento-data_fim').datetimepicker({
+        todayHighlight: true,
+        autoclose: true,
+        format: 'yyyy-mm-dd hh:ii'
+    });
+
+    $.ajax({
+        url: urlApi+'/ultimos-disparos',
+        type: "GET",
+        data: {access_token : $.cookie('token')},
+        dataType: 'json',
+        success: function (json) {
+            var dataProvider = json.data;
+            var chart = AmCharts.makeChart("chartdiv", {
+                "theme": "light",
+                "type": "serial",
+                "dataProvider": dataProvider,
+                "valueAxes": [{
+                    "stackType": "3d",
+                    "unit": "",
+                    "position": "left",
+                    "title": "GDP growth rate",
+                }],
+                "startDuration": 1,
+                "graphs": [{
+                    "balloonText": " DIA [[category]] (Aguardando): <b>[[value]]</b>",
+                    "fillAlphas": 0.9,
+                    "lineAlpha": 0.2,
+                    "title": "Aguardando",
+                    "type": "column",
+                    "valueField": "Aguardando"
+                }, {
+                    "balloonText": "DIA [[category]] (Solicitado): <b>[[value]]</b>",
+                    "fillAlphas": 0.9,
+                    "lineAlpha": 0.2,
+                    "title": "Solicitado",
+                    "type": "column",
+                    "valueField": "Solicitado"
+                },{
+                    "balloonText": "DIA [[category]] (Enviado): <b>[[value]]</b>",
+                    "fillAlphas": 0.9,
+                    "lineAlpha": 0.2,
+                    "title": "Enviado",
+                    "type": "column",
+                    "valueField": "Enviado"
+                }],
+                "plotAreaFillAlphas": 0.1,
+                "depth3D": 60,
+                "angle": 30,
+                "categoryField": "Dia",
+                "categoryAxis": {
+                    "gridPosition": "start"
+                },
+                "export": {
+                    "enabled": true
+                }
+            });
+            jQuery('.chart-input').off().on('input change',function() {
+                var property	= jQuery(this).data('property');
+                var target		= chart;
+                chart.startDuration = 0;
+
+                if ( property == 'topRadius') {
+                    target = chart.graphs[0];
+                    if ( this.value == 0 ) {
+                        this.value = undefined;
+                    }
+                }
+
+                target[property] = this.value;
+                chart.validateNow();
+            });
+        }
+    });
 
 
 </script>
