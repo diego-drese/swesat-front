@@ -25,8 +25,8 @@
     <link href="assets/css/style.bundle.css" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://www.amcharts.com/lib/3/plugins/export/export.css" type="text/css" meDia="all" />
     <!--end::Base Styles -->
-
     <link rel="shortcut icon" href="assets/img/favicon.ico" />
+    <?php require('config.php') ?>
 </head>
 <!-- end::Head -->
 <!-- end::Body -->
@@ -189,7 +189,7 @@
             window.location.href= "/";
         }
     }, 1000);
-    var urlApi  = "http://swesat.local";
+    var urlApi  = "<?php echo $urlApi ?>";
     var language = {
         "lengthMenu": "Mostrando _MENU_ registros por pagina",
         "zeroRecords": "Nenhum dado encontrado",

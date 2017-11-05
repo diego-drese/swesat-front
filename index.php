@@ -23,7 +23,7 @@
     <link href="assets/css/bundle.css" rel="stylesheet" type="text/css" />
     <link href="assets/css/style.bundle.css" rel="stylesheet" type="text/css" />
     <link rel="shortcut icon" href="assets/img/favicon.ico" />
-
+    <?php require('config.php') ?>
 </head>
 <!-- end::Head -->
 
@@ -107,7 +107,7 @@
 <script src="assets/js/login.js" type="text/javascript"></script>
 <!--end::Page Snippets -->
 <script type="text/javascript">
-    var urlApi = "http://swesat.local/oauth/access_token";
+    var urlApi = "<?php echo $urlApi ?>/oauth/access_token";
     if($.cookie('token')){
        window.location.href = "/inicio.php";
     }else{
